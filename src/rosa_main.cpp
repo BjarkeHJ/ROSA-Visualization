@@ -108,11 +108,17 @@ void RosaPoints::normalize() {
 
     // Downsampling 
     pcl::VoxelGrid<pcl::PointNormal> vgf;
-    vgf.setInputCloud(RC.cloud_w_normals);
-    vgf.setLeafSize(ds_leaf_size, ds_leaf_size, ds_leaf_size);
-    vgf.filter(*RC.cloud_w_normals);
+    int iter = 0;
+    ds_leaf_size = 0.001;
+    while (pcd_size_ > max_points) {
+        vgf.setInputCloud(RC.cloud_w_normals);
+        vgf.setLeafSize(ds_leaf_size, ds_leaf_size, ds_leaf_size);
+        vgf.filter(*RC.cloud_w_normals);
+        pcd_size_ = RC.cloud_w_normals->points.size(); // update cloud size
+        ds_leaf_size += 0.005;
+        iter++;
 
-    pcd_size_ = RC.cloud_w_normals->points.size(); // update cloud size
+    }
 
     // Reset variable for to accomodate normalized points...
     RC.pts_->clear();

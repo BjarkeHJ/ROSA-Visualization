@@ -6,7 +6,8 @@ cwd = os.getcwd()
 # folder = "vis_tools/data"
 # file_name = "output.pcd"
 
-file_name = "cloud.pcd"
+# file_name = "cloud.pcd"
+file_name = "05_horizontal_wing_side.pcd"
 folder = "data/"
 
 pcd_path = os.path.join(cwd, folder, file_name)
@@ -45,12 +46,12 @@ class Visualizer:
         cloud_ds = self.point_cloud.voxel_down_sample(leaf_size)
         return cloud_ds
 
+
+
 pcd_vis = Visualizer()
 pcd_vis.set_pcd(pcd_path)
 print("Cloud Size: ", pcd_vis.size)
 pcd_vis.visualize()
-
-
 
 
 # Downsampling 

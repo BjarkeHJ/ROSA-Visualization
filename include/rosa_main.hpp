@@ -108,7 +108,8 @@ public:
     
 private:
     /* Params */
-    float ds_leaf_size = 0.005;
+    float ds_leaf_size;
+    int max_points = 500;
     int ne_KNN = 10;
     int k_KNN = 10;
     int num_drosa_iter = 1;

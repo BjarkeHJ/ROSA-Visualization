@@ -6,7 +6,8 @@ void save_pcd_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pts, const std::stri
 void save_pcd_pts_normals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pts_nrms, const std::string &save_path);
 
 /* Input and Output Paths... */
-std::string pcd_path = "../data/cloud.pcd";
+// std::string pcd_path = "../data/cloud.pcd";
+std::string pcd_path = "../data/05_horizontal_wing_side.pcd";
 std::string save_path = "../vis_tools/data/output.pcd";
 
 int main() {

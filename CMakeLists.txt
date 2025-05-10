@@ -7,8 +7,8 @@ endif()
 
 set(EXEC_NAME rosa_dev)
 
-set(CMAKE_INSTALL_RPATH "/home/airlab/miniconda3/envs/isaac_env/lib")
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+# set(CMAKE_INSTALL_RPATH "/home/airlab/miniconda3/envs/isaac_env/lib")
+# set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
 
 find_package(PCL 1.12 REQUIRED)
 
