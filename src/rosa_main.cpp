@@ -11,7 +11,7 @@ namespace predrecon
         pcd_size_ = 0; // Init
         Radius = 0.1;
         ne_KNN = 10;
-        estNum = 500; // max number of points in cloud
+        estNum = 2000; // max number of points in cloud
         pt_downsample_voxel_size = 0.001;
 
         k_KNN = 6; // KNN search K
@@ -20,7 +20,7 @@ namespace predrecon
 
         th_mah = 0.01;
         delta = 0.01;
-        sample_radius = 0.01;
+        sample_radius = 0.02;
         alpha_recenter = 0.3;
         angle_upper = 45.0;
         length_upper = 1.0;
@@ -31,10 +31,13 @@ namespace predrecon
         P.pts_.reset(new pcl::PointCloud<pcl::PointXYZ>);
         P.pts_ = in_cloud;
 
+        output_cloud.reset(new pcl::PointCloud<pcl::PointXYZ>);
         output_cloud_01.reset(new pcl::PointCloud<pcl::PointXYZ>);
         output_cloud_02.reset(new pcl::PointCloud<pcl::PointXYZ>);
         output_cloud_03.reset(new pcl::PointCloud<pcl::PointXYZ>);
         output_cloud_04.reset(new pcl::PointCloud<pcl::PointXYZ>);
+
+        cloud_ds_restored.reset(new pcl::PointCloud<pcl::PointXYZ>);
     }
 
     void ROSA_main::main()
@@ -45,25 +48,30 @@ namespace predrecon
         std::cout << "RosaMain: Input Cloud Size: " << pcd_size_ << std::endl;
 
         // Distance filterin (My Implementation)
-        double pts_dist_lim = 30;
-        pcl::PassThrough<pcl::PointXYZ> ptf;
-        pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-        ptf.setInputCloud(P.pts_);
-        ptf.setFilterFieldName("x");
-        ptf.setFilterLimits(-pts_dist_lim, pts_dist_lim);
-        ptf.filter(*temp_cloud);  
-
-        ptf.setInputCloud(temp_cloud);
-        ptf.setFilterFieldName("y");
-        ptf.setFilterLimits(-pts_dist_lim, pts_dist_lim);
-        ptf.filter(*P.pts_);
-
-        pcd_size_ = P.pts_->size();
-
-        std::cout << "RosaMain: Distance Constrained Cloud Size: " << pcd_size_ << std::endl;
+        // double pts_dist_lim = 30;
+        // pcl::PassThrough<pcl::PointXYZ> ptf;
+        // pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        // ptf.setInputCloud(P.pts_);
+        // ptf.setFilterFieldName("x");
+        // ptf.setFilterLimits(-pts_dist_lim, pts_dist_lim);
+        // ptf.filter(*temp_cloud);  
+        // ptf.setInputCloud(temp_cloud);
+        // ptf.setFilterFieldName("y");
+        // ptf.setFilterLimits(-pts_dist_lim, pts_dist_lim);
+        // ptf.filter(*P.pts_);
+        // pcd_size_ = P.pts_->size();
+        // std::cout << "RosaMain: Distance Constrained Cloud Size: " << pcd_size_ << std::endl;
 
         //   pcloud_read_off(cloud_path); // Read pointcloud data
         normalize(); // Normalize data in translation and scale, estimate normals, downsample point cloud (voxel size 0.02)
+
+        for (int i=0; i<(int)P.pts_->size(); ++i) {
+            pcl::PointXYZ pt;
+            pt.x = P.pts_->points[i].x * norm_scale + centroid(0);
+            pt.y = P.pts_->points[i].y * norm_scale + centroid(1);
+            pt.z = P.pts_->points[i].z * norm_scale + centroid(2);
+            cloud_ds_restored->points.push_back(pt);
+        }
 
         std::cout << "RosaMain: Downsampled Cloud Size: " << pcd_size_ << std::endl;
 
@@ -169,6 +177,13 @@ namespace predrecon
 
         // /* store real scale graph */
         storeRealGraph();
+        for (int i=0; i<(int)P.realVertices.rows(); ++i) {
+            pcl::PointXYZ pt;
+            pt.x = P.realVertices(i,0);
+            pt.y = P.realVertices(i,1);
+            pt.z = P.realVertices(i,2);
+            output_cloud->points.push_back(pt);
+        }
     }
 
     void ROSA_main::pcloud_read_off()

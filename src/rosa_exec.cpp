@@ -8,7 +8,9 @@ void save_pcd_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pts, const std::stri
 void save_pcd_pts_normals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pts_nrms, const std::string &save_path);
 
 /* Input and Output Paths... */
-std::string pcd_path = "../data/single_vertical_blade.pcd";
+std::string pcd_path = "../data/generated_point_cloud.pcd";
+
+// std::string pcd_path = "../data/single_vertical_blade.pcd";
 // std::string pcd_path = "../data/single_blade.pcd";
 // std::string pcd_path = "../data/sample_structure_02.pcd";
 // std::string pcd_path = "../data/side.pcd";
@@ -17,11 +19,14 @@ std::string pcd_path = "../data/single_vertical_blade.pcd";
 // std::string pcd_path = "../data/08_nacelle_side.pcd";
 // std::string pcd_path = "../data/09_wings_only_front.pcd";
 
+std::string save_path = "../vis_tools/data/output.pcd";
 std::string save_path_01 = "../vis_tools/data/output_01.pcd";
 std::string save_path_02 = "../vis_tools/data/output_02.pcd";
 std::string save_path_03 = "../vis_tools/data/output_03.pcd";
 std::string save_path_04 = "../vis_tools/data/output_04.pcd";
 std::string save_ds_cloud_path = "../vis_tools/data/input_ds.pcd";
+std::string save_ds_cloud_restored_path = "../vis_tools/data/input_ds_restored.pcd";
+
 
 int main() {
     /* Load .pcd file */
@@ -35,11 +40,15 @@ int main() {
     skel_op->main();
 
     /* Save Output */
-    save_pcd_pts(skel_op->P.pts_, save_ds_cloud_path);
-    save_pcd_pts(skel_op->output_cloud_01, save_path_01);
-    save_pcd_pts(skel_op->output_cloud_02, save_path_02);
-    save_pcd_pts(skel_op->output_cloud_03, save_path_03);
-    save_pcd_pts(skel_op->output_cloud_04, save_path_04);
+    save_pcd_pts(skel_op->P.pts_, save_ds_cloud_path); // Downsampled normalized
+    save_pcd_pts(skel_op->cloud_ds_restored, save_ds_cloud_restored_path); // Downsampled scale restored
+
+    save_pcd_pts(skel_op->output_cloud, save_path); // RealVertices (restored)
+
+    save_pcd_pts(skel_op->output_cloud_01, save_path_01); // after drosa (normalized)
+    save_pcd_pts(skel_op->output_cloud_02, save_path_02); // after dcrose (normalized)
+    save_pcd_pts(skel_op->output_cloud_03, save_path_03); // after lineextract (normalized)
+    save_pcd_pts(skel_op->output_cloud_04, save_path_04); // after recentering (normalized)
     return 0;
 }
 

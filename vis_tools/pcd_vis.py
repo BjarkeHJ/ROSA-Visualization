@@ -118,20 +118,28 @@ cwd = os.getcwd()
 
 folder = "vis_tools/data/"
 
-ds_cloud_name = "input_ds.pcd"
+# ds_cloud_name = "input_ds.pcd"
+ds_cloud_name = "input_ds_restored.pcd"
 ds_cloud_path = os.path.join(cwd, folder, ds_cloud_name)
 if not os.path.exists(ds_cloud_path):
     raise FileNotFoundError(f"File '{ds_cloud_path}' not found!")
 
-rosa_fname = "output_04.pcd"
+rosa_fname = "output.pcd"
+# rosa_fname = "extracted_skeleton.pcd"
 rosa_cloud_path = os.path.join(cwd, folder, rosa_fname)
 if not os.path.exists(rosa_cloud_path):
     raise FileNotFoundError(f"File '{rosa_cloud_path}' not found!")
 
+rosa_fname2 = "extracted_skeleton.pcd"
+rosa_cloud_path2 = os.path.join(cwd, folder, rosa_fname2)
+if not os.path.exists(rosa_cloud_path2):
+    raise FileNotFoundError(f"File '{rosa_cloud_path2}' not found!")
+
 # Visualizer:
 pcd_vis = Visualizer()
-pcd_vis.add_cloud(ds_cloud_path, color=[0,1,1], point_size=0.03)
-pcd_vis.add_cloud(rosa_cloud_path, color=[1,0,0], point_size=0.1)
+pcd_vis.add_cloud(ds_cloud_path, color=[1,1,1], point_size=1.0)
+pcd_vis.add_cloud(rosa_cloud_path, color=[0,0,1], point_size=3.0)
+pcd_vis.add_cloud(rosa_cloud_path2, color=[1,0,0], point_size=3.0)
 pcd_vis.visualize()
 
 
@@ -149,8 +157,8 @@ save_flag = True
 # }
 
 camera_view = {
-    "center": [-0.5, 0.5, -0.1], #Direction of view
-    "eye": [0.6, -0.8, 1.0], #Position of view
+    "center": [5, 0, 200], #Direction of view (Where the camera is pointing)
+    "eye": [70, 20, 250], #Position of view (Where the camera is located)
     "up": [0,0,1]
 }
 

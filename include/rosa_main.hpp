@@ -140,10 +140,13 @@ namespace predrecon
         bool visFlag;
         double groundHeight;
 
+        pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud;
         pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_01;
         pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_02;
         pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_03;
         pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_04;
+
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_ds_restored;
 
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
