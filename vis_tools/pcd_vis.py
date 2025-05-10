@@ -130,23 +130,30 @@ if not os.path.exists(rosa_cloud_path):
 
 # Visualizer:
 pcd_vis = Visualizer()
-pcd_vis.add_cloud(ds_cloud_path, color=[1,1,1], point_size=0.01)
-pcd_vis.add_cloud(rosa_cloud_path, color=[1,0,0], point_size=0.05)
-# pcd_vis.visualize()
+pcd_vis.add_cloud(ds_cloud_path, color=[0,1,1], point_size=0.03)
+pcd_vis.add_cloud(rosa_cloud_path, color=[1,0,0], point_size=0.1)
+pcd_vis.visualize()
 
 
 # Save Visualizations
 image_folder = "vis_tools/images"
-image_fname = "test.png"
+image_fname = "output_img.png"
 out_img_path = os.path.join(cwd, image_folder, image_fname)
 
 save_flag = True
 
+# camera_view = {
+#     "center": [0.5,0.5,0], #Direction of view
+#     "eye": [0.55,0.55,0], #Position of view
+#     "up": [0,0,1]
+# }
+
 camera_view = {
-    "center": [0.5,0.5,0], #Direction of view
-    "eye": [0.55,0.55,0], #Position of view
+    "center": [-0.5, 0.5, -0.1], #Direction of view
+    "eye": [0.6, -0.8, 1.0], #Position of view
     "up": [0,0,1]
 }
+
 
 if save_flag == True:
     pcd_vis.render_image(out_img_path, width=3840, height=2160, transparent=True, camera_view=camera_view)

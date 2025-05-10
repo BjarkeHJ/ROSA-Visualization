@@ -11,7 +11,7 @@ namespace predrecon
         pcd_size_ = 0; // Init
         Radius = 0.1;
         ne_KNN = 10;
-        estNum = 1000; // max number of points in cloud
+        estNum = 500; // max number of points in cloud
         pt_downsample_voxel_size = 0.001;
 
         k_KNN = 6; // KNN search K
@@ -43,6 +43,24 @@ namespace predrecon
 
         pcd_size_ = P.pts_->size();
         std::cout << "RosaMain: Input Cloud Size: " << pcd_size_ << std::endl;
+
+        // Distance filterin (My Implementation)
+        double pts_dist_lim = 30;
+        pcl::PassThrough<pcl::PointXYZ> ptf;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr temp_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+        ptf.setInputCloud(P.pts_);
+        ptf.setFilterFieldName("x");
+        ptf.setFilterLimits(-pts_dist_lim, pts_dist_lim);
+        ptf.filter(*temp_cloud);  
+
+        ptf.setInputCloud(temp_cloud);
+        ptf.setFilterFieldName("y");
+        ptf.setFilterLimits(-pts_dist_lim, pts_dist_lim);
+        ptf.filter(*P.pts_);
+
+        pcd_size_ = P.pts_->size();
+
+        std::cout << "RosaMain: Distance Constrained Cloud Size: " << pcd_size_ << std::endl;
 
         //   pcloud_read_off(cloud_path); // Read pointcloud data
         normalize(); // Normalize data in translation and scale, estimate normals, downsample point cloud (voxel size 0.02)

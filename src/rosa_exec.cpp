@@ -8,8 +8,11 @@ void save_pcd_pts(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pts, const std::stri
 void save_pcd_pts_normals(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_pts_nrms, const std::string &save_path);
 
 /* Input and Output Paths... */
-// std::string pcd_path = "../data/cloud.pcd";
-std::string pcd_path = "../data/windmill.pcd";
+std::string pcd_path = "../data/single_vertical_blade.pcd";
+// std::string pcd_path = "../data/single_blade.pcd";
+// std::string pcd_path = "../data/sample_structure_02.pcd";
+// std::string pcd_path = "../data/side.pcd";
+// std::string pcd_path = "../data/windmill.pcd";
 // std::string pcd_path = "../data/05_horizontal_wing_side.pcd";
 // std::string pcd_path = "../data/08_nacelle_side.pcd";
 // std::string pcd_path = "../data/09_wings_only_front.pcd";

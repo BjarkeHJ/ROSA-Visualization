@@ -15,6 +15,8 @@
 #include <pcl/filters/random_sample.h>
 #include <pcl/features/normal_3d.h>
 
+#include <pcl/filters/passthrough.h>
+
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
