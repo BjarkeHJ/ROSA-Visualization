@@ -1,70 +1,48 @@
-#include <iostream> // For debugging
-#include <chrono> // For timing
-#include <algorithm>
+#ifndef _ROSA_MAIN_H_
+#define _ROSA_MAIN_H_
 
+#include <datawrapper.hpp>
+#include <Extra_Del.hpp>
+
+#include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
+#include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/common/common.h>
 #include <pcl/common/centroid.h>
-#include <pcl/common/io.h>
-#include <pcl/kdtree/kdtree.h>
-#include <pcl/features/normal_3d.h>
+#include <pcl/common/copy_point.h>
+#include <pcl/common/geometry.h>
 #include <pcl/filters/voxel_grid.h>
-
-#include <pcl/io/pcd_io.h> // for saving pcl tests
+#include <pcl/filters/random_sample.h>
+#include <pcl/features/normal_3d.h>
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 #include <Eigen/SVD>
 
+#include <string>
+#include <vector>
+#include <list>
+#include <set>
+#include <iostream>
+#include <fstream>
+#include <algorithm>
+#include <random>
+#include <unordered_map>
+#include <chrono>
+#include <math.h>
+#include <time.h>
+#include <deque>
+#include <stack>
 
-#ifndef ROSA_MAIN_HPP
-#define ROSA_MAIN_HPP
+using namespace std;
+using std::unique_ptr;
+using std::shared_ptr;
 
-#include <Extra_Del.hpp>
+namespace predrecon
+{
 
-class DataWrapper {
-private:
-    double* data;
-    int npoints;
-    const static int ndim = 3; 
-        
-public: 
-    void factory(double* data, int npoints ) {
-        this->data = data;
-        this->npoints = npoints;
-    }
-
-    /** 
-     *  Data retrieval function
-     *  @param a address over npoints
-     *  @param b address over the dimensions
-     */
-
-    inline double operator()(int a, int b) {
-        assert( a < npoints );
-        assert( b < ndim );
-        return data[ a + npoints*b ];
-    }
-
-    // retrieve a single point at offset a, in a vector (preallocated structure)
-    inline void operator()(int a, std::vector<double>& p){
-        assert( a < npoints );
-        assert( (int)p.size() == ndim );
-        p[0] = data[ a + 0*npoints ];
-        p[1] = data[ a + 1*npoints ];
-        p[2] = data[ a + 2*npoints ];
-    }
-
-    int length(){
-        return this->npoints;
-    }
-};
-
-
-
-class RosaPoints {
-    struct Vector3dCompare 
+    struct Vector3dCompare //OBS ADDED _1 
     {
         bool operator()(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2) const {
             if (v1(0) != v2(0)) return v1(0) < v2(0);
@@ -72,91 +50,170 @@ class RosaPoints {
             return v1(2) < v2(2);
         }
     };
-    
-    struct rosa 
+
+
+    struct Vector3dHash_1 //OBS ADDED _1
     {
-        pcl::PointCloud<pcl::PointXYZ>::Ptr pts_;
-        pcl::PointCloud<pcl::Normal>::Ptr normals_;
-        pcl::PointCloud<pcl::PointNormal>::Ptr cloud_w_normals;
-
-        std::vector<std::vector<int>> neighs;
-        std::vector<std::vector<int>> neighs_new;
-        std::vector<std::vector<int>> surf_neighs;
-
-        double *datas; // Stores normalized points in a vector (x1,x2,...y1,y2,...z1,z2,...)
-        Eigen::MatrixXd pts_mat; // cloud in matrix format (size x 3)
-        Eigen::MatrixXd nrs_mat; // normals in matrix format (size x 3)
-
-        Eigen::MatrixXd skelver;
-        Eigen::MatrixXd corresp;
-        Eigen::MatrixXi skeladj;
+        size_t operator()(const Eigen::Vector3d& v) const {
+            std::hash<double> hasher;
+            size_t seed = 0;
+            seed ^= hasher(v.x()) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            seed ^= hasher(v.y()) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            seed ^= hasher(v.z()) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            return seed;
+        }
     };
 
-public:
-    /* Functions */
-    void init();
-    void rosa_main(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
-    
-    /* Data */
-    rosa RC; // data structure for Rosa Cloud
-    pcl::PointCloud<pcl::PointXYZ>::Ptr skeleton_ver_cloud;
+    struct Pcloud
+    {
+        pcl::PointCloud<pcl::PointXYZ>::Ptr pts_; // Downsampled (will be)
+        pcl::PointCloud<pcl::PointXYZ>::Ptr ori_pts_; // Original points
+        pcl::PointCloud<pcl::PointXYZ>::Ptr ground_pts_; // Only if ground=true
+        pcl::PointCloud<pcl::Normal>::Ptr normals_; // Downsampled normals
+        pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals; // Original points with normals
+        Eigen::MatrixXd pts_mat;
+        Eigen::MatrixXd ar_pts_mat;
+        Eigen::MatrixXd nrs_mat;
+        vector<vector<int>> neighs; // Neighbours (idxs) to each point
+        vector<vector<int>> surf_neighs; // updated neighbours after surf search
+        vector<vector<int>> neighs_new; // Final updated neighbours
 
-    /* Temp... */
-    pcl::PointCloud<pcl::PointXYZ>::Ptr vis_curr_cloud;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr vis_rosa_pts;
+        double* datas; // Pointer member of struct Pcloud
+        double* fastDatas;
+        Eigen::MatrixXd skelver; // Skeleton vertices
+        Eigen::MatrixXd corresp;
+        Eigen::MatrixXi skeladj;
+        Eigen::MatrixXd vertices; // Final vertices of skeleton
+        Eigen::MatrixXi edges; // Final edges of skeleton
+        Eigen::MatrixXi degrees;
+        deque<int> joint;
+        vector<list<int>> graph;
+        vector<vector<int>> branches; // branches of skeleton
+        vector<bool> visited;
+        vector<bool> pts_distributed;
+        vector<int> pts_segment_slave; // each input point belong to which segment.
+        vector<double> pts_segment_sim; // the similarity of each input point and its segemnt belonging.
+        vector<vector<int>> branch_seg_pairs; // the segments index set of each branch.
+        map<int, vector<int>> segments; // e.g. map[0] = {id_0, id_1}, id_0 and id_1 are both indexer in vertices.
+        pcl::PointCloud<pcl::PointXYZ>::Ptr cut_plane;
+        Eigen::Vector3d cut_position;
+        Eigen::Vector3d cut_vector;
+        
+        // SUB SPACE POINTS
+        vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> sub_space; // vector of points contained in each sub-space
+        map<int, pcl::PointCloud<pcl::PointXYZ>::Ptr> seg_clouds; // points contained in each segment, [seg_id, points]
+        
+        // SUB SPACE POINTS SCALE RESTORED
+        double scale;
+        Eigen::Vector3d center;
+        vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> sub_space_scale; // Points in each branch sub-space (5)
+        map<int, pcl::PointCloud<pcl::PointXYZ>::Ptr> seg_clouds_scale; // Points in each segment, [seg_id, points] (27)
+        
+        Eigen::MatrixXd vertices_scale;
+        map<Eigen::Vector3d, int, Vector3dCompare> pt_seg_pair;
+        map<int, double> inner_dist_set; // inner distance (avg) of each sub-segment-space (for viewpoints generation)
+        
+        // Real scene scale skeleton graph
+        Eigen::MatrixXd realVertices;
+        Eigen::MatrixXd outputVertices;
+        Eigen::MatrixXi outputEdges;
+        vector<vector<int>> startendBranches;
+        vector<Eigen::Vector3d> mainDirBranches;
+        vector<Eigen::Vector3d> centroidBranches; 
+    };
 
-    
-private:
-    /* Params */
-    float ds_leaf_size;
-    int max_points = 500;
-    int ne_KNN = 10;
-    int k_KNN = 10;
-    int num_drosa_iter = 1;
-    int num_dcrosa_iter = 1;
-    float r_range = 0.1; 
-    float th_mah = 0.1 * r_range; // Mahalanobis distance for determination of surface neighbours
-    float delta = 0.5; // used for distance query in 
-    float sample_radius = 0.05; // used in lineextract
+    class ROSA_main {
+    public:
+        ROSA_main(){
+        }
+        ~ROSA_main(){
+        }
 
-    /* Data */
-    int pcd_size_;
-    int seg_count;
-    float norm_scale;
-    Eigen::Vector4f centroid;
-    Eigen::MatrixXd pset; // Stores normalized points for operations...
-    Eigen::MatrixXd dpset;
-    Eigen::MatrixXd vset; // Vectors orthogonal to the surface normals...  
-    Eigen::MatrixXd vvar;
-    pcl::KdTreeFLANN<pcl::PointXYZ> rosa_tree;
-    Eigen::MatrixXi adj_before_collapse;
-    
-    /* Functions */
-    void set_cloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
-    void adj_matrix(float &range_r);
-    float pt_similarity_metric(pcl::PointXYZ &p1, pcl::Normal &v1, pcl::PointXYZ &p2, pcl::Normal &v2, float &range_r);
-    void normalize();
-    void normal_estimation();
+        void init(pcl::PointCloud<pcl::PointXYZ>::Ptr in_cloud);
 
-    void rosa_drosa();
-    void rosa_initialize(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud, pcl::PointCloud<pcl::Normal>::Ptr &normals);
-    Eigen::Matrix3d create_orthonormal_frame(Eigen::Vector3d &v);
-    Eigen::MatrixXd compute_active_samples(int &idx, Eigen::Vector3d &p_cut, Eigen::Vector3d &v_cut);
-    void pcloud_isoncut(Eigen::Vector3d& p_cut, Eigen::Vector3d& v_cut, std::vector<int>& isoncut, double*& datas, int& size);
-    void distance_query(DataWrapper& data, const std::vector<double>& Pp, const std::vector<double>& Np, double delta, std::vector<int>& isoncut);
-    Eigen::Vector3d compute_symmetrynormal(Eigen::MatrixXd& local_normals);
-    double symmnormal_variance(Eigen::Vector3d& symm_nor, Eigen::MatrixXd& local_normals);
-    Eigen::Vector3d symmnormal_smooth(Eigen::MatrixXd& V, Eigen::MatrixXd& w);
-    Eigen::Vector3d closest_projection_point(Eigen::MatrixXd& P, Eigen::MatrixXd& V);
+        void main();
 
-    void rosa_dcrosa();
-    void rosa_lineextract();
+        Pcloud P;
 
-    int argmax_eigen(Eigen::MatrixXd &x);
+        bool visFlag;
+        double groundHeight;
 
-    /* Temporary */
-    bool save_flag = true; // for saving instance of point cloud
+        pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_01;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_02;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_03;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr output_cloud_04;
 
-};
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    private:
+        /* Func */
+        void pcloud_read_off();
+        double mahalanobis_leth(pcl::PointXYZ& p1, pcl::Normal& v1, pcl::PointXYZ& p2, pcl::Normal& v2, double& r);
+        void pcloud_adj_matrix_mahalanobis(double& r_range);
+        Eigen::Matrix3d create_orthonormal_frame(Eigen::Vector3d& v);
+        void rosa_initialize(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, pcl::PointCloud<pcl::Normal>::Ptr& normals);
+        void distance_query(DataWrapper& data, const vector<double>& Pp, const vector<double>& Np, double delta, vector<int>& isoncut);
+        void pcloud_isoncut(Eigen::Vector3d& p_cut, Eigen::Vector3d& v_cut, vector<int>& isoncut, double*& datas, int& size);
+        Eigen::MatrixXd rosa_compute_active_samples(int& idx, Eigen::Vector3d& p_cut, Eigen::Vector3d& v_cut);
+        Eigen::Vector3d compute_symmetrynormal(Eigen::MatrixXd& local_normals);
+        double symmnormal_variance(Eigen::Vector3d& symm_nor, Eigen::MatrixXd& local_normals);
+        Eigen::Vector3d symmnormal_smooth(Eigen::MatrixXd& V, Eigen::MatrixXd& w);
+        Eigen::Vector3d closest_projection_point(Eigen::MatrixXd& P, Eigen::MatrixXd& V);
+        void rosa_drosa();
+        void rosa_dcrosa();
+        void rosa_lineextract();
+        void rosa_recenter();
+        void graph_decomposition();
+        void inner_decomposition();
+        void branch_merge();
+        void prune_branches();
+        void restore_scale();
+        void cal_inner_dist();
+        void distribute_ori_cloud();
+        void storeRealGraph();
+        pcl::KdTreeFLANN<pcl::PointXYZ> rosa_tree;
+
+        /* PARAMS */
+        double prob_upper;
+        double pt_downsample_voxel_size;
+        double Radius, th_mah, delta, sample_radius, alpha_recenter, angle_upper, length_upper, length_lower, prune_lower;
+        int numiter_drosa, numiter_dcrosa, k_KNN, ne_KNN;
+        bool prune_flag;
+        int ori_num;
+        bool ground;
+        int estNum;
+
+        /* Data */
+        string input_pcd, input_mesh;
+        int pcd_size_;
+        int seg_count;
+        double norm_scale;
+        Eigen::MatrixXd MAHADJ;
+        Eigen::MatrixXd pset, dpset;
+        Eigen::MatrixXd vset;
+        Eigen::MatrixXd vvar;
+        Eigen::Vector4d centroid;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr skeleton_ver_cloud;
+        Eigen::MatrixXi adj_before_collapse;
+
+         /* Utils */
+        // shared_ptr<PlanningVisualization> vis_utils_;
+        int argmax_eigen(Eigen::MatrixXd &x);
+        void normalize();
+        void normal_estimation();
+        // void VisCallback(const ros::TimerEvent& e);
+        void dfs(int& v);
+        bool ocr_node(int& n, list<int>& candidates);
+        vector<vector<int>> divide_branch(vector<int>& input_branch);
+        vector<int> merge_branch(vector<int>& input_branch);
+        bool prune(vector<int>& input_branch);
+        double distance_point_line(Eigen::Vector3d& point, Eigen::Vector3d& line_pt, Eigen::Vector3d& line_dir);
+        Eigen::Vector3d PCA(Eigen::MatrixXd& A);
+        
+        /* Timer */
+        // ros::Timer vis_timer_;
+    };
+
+}
 
 #endif
